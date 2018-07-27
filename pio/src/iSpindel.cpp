@@ -89,6 +89,10 @@ float Volt, Temperatur, Tilt, Gravity; // , corrGravity;
 
 bool DSrequested = false;
 
+#ifdef LED_EXT
+bool ledState;
+#endif
+
 float scaleTemperature(float t)
 {
   if (my_tempscale == TEMP_CELSIUS)
@@ -822,6 +826,11 @@ float calculateGravity()
 void flash()
 {
   // triggers the LED
+  #ifdef LED_EXT
+  digitalWrite(2, ledState;); //toggle
+  ledState=!ledState;
+  #endif
+
   Volt = getBattery();
   getAccSample();
   Tilt = calculateTilt();
@@ -852,6 +861,12 @@ bool connectBackupCredentials()
 void setup()
 {
 
+  #ifdef LED_EXT
+  ledState = HIGH; //OFF
+  digitalWrite(2, ledState); 
+  pinMode(2, OUTPUT); //GPIO4 is only one free pin
+  #endif
+  
   Serial.begin(115200);
 
   CONSOLELN(F("\nFW " FIRMWAREVERSION));
@@ -884,7 +899,7 @@ void setup()
       ESP.rtcUserMemoryWrite(WIFIENADDR, &tmp, sizeof(tmp));
     }
 
-    flasher.attach(1, flash);
+	flasher.attach(1, flash);
 
     // rescue if wifi credentials lost because of power loss
     if (!startConfiguration())
