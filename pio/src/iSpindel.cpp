@@ -6,6 +6,7 @@ All rights reserverd by S.Lang <universam@web.de>
 **************************************************************/
 
 // includes go here
+#include <PubSubClient.h>
 #include "Globals.h"
 #include "MPUOffset.h"
 // #endif
@@ -68,6 +69,8 @@ char my_name[TKIDSIZE] = "iSpindel000";
 char my_server[TKIDSIZE];
 char my_url[TKIDSIZE];
 char my_db[TKIDSIZE] = "ispindel";
+char my_username[TKIDSIZE];
+char my_password[TKIDSIZE];
 char my_job[TKIDSIZE] = "ispindel";
 char my_instance[TKIDSIZE] = "000";
 char my_polynominal[70] = "-0.00031*tilt^2+0.557*tilt-14.054";
@@ -104,6 +107,19 @@ float scaleTemperature(float t)
   else
     return t; // Invalid value for my_tempscale => default to celsius
 }
+
+String tempScaleLabel(void)
+{
+  if (my_tempscale == TEMP_CELSIUS)
+    return "C";
+  else if (my_tempscale == TEMP_FAHRENHEIT)
+    return "F";
+  else if (my_tempscale == TEMP_KELVIN)
+    return "K";
+  else
+    return "C"; // Invalid value for my_tempscale => default to celsius
+}
+
 
 // callback notifying us of the need to save config
 void saveConfigCallback()
@@ -167,10 +183,14 @@ bool readConfig()
             strcpy(my_url, json["URL"]);
           if (json.containsKey("DB"))
             strcpy(my_db, json["DB"]);
+          if (json.containsKey("Username"))
+            strcpy(my_username, json["Username"]);
+          if (json.containsKey("Password"))
+            strcpy(my_password, json["Password"]);
           if (json.containsKey("Job"))
             strcpy(my_job, json["Job"]);
           if (json.containsKey("Instance"))
-            strcpy(my_instance, json["Instance"]);            
+            strcpy(my_instance, json["Instance"]);
           if (json.containsKey("Vfact"))
             my_vfact = json["Vfact"];
           if (json.containsKey("TS"))
@@ -214,6 +234,7 @@ bool readConfig()
     CONSOLELN(F(" ERROR: failed to mount FS!"));
     return false;
   }
+  return true;
 }
 
 bool shouldStartConfig()
@@ -279,55 +300,54 @@ void validateInput(const char *input, char *output)
   tmp.toCharArray(output, tmp.length() + 1);
 }
 
-String urlencode(String str)
-{
-  String encodedString = "";
-  char c;
-  char code0;
-  char code1;
-  char code2;
-  for (int i = 0; i < str.length(); i++)
-  {
-    c = str.charAt(i);
-    if (c == ' ')
-    {
-      encodedString += '+';
-    }
-    else if (isalnum(c))
-    {
-      encodedString += c;
-    }
-    else
-    {
-      code1 = (c & 0xf) + '0';
-      if ((c & 0xf) > 9)
-      {
-        code1 = (c & 0xf) - 10 + 'A';
-      }
-      c = (c >> 4) & 0xf;
-      code0 = c + '0';
-      if (c > 9)
-      {
-        code0 = c - 10 + 'A';
-      }
-      code2 = '\0';
-      encodedString += '%';
-      encodedString += code0;
-      encodedString += code1;
-      //encodedString+=code2;
-    }
-    yield();
-  }
-  return encodedString;
-}
+// String urlencode(String str)
+// {
+//   String encodedString = "";
+//   char c;
+//   char code0;
+//   char code1;
+//   char code2;
+//   for (auto i = 0; i < str.length(); i++)
+//   {
+//     c = str.charAt(i);
+//     if (c == ' ')
+//     {
+//       encodedString += '+';
+//     }
+//     else if (isalnum(c))
+//     {
+//       encodedString += c;
+//     }
+//     else
+//     {
+//       code1 = (c & 0xf) + '0';
+//       if ((c & 0xf) > 9)
+//       {
+//         code1 = (c & 0xf) - 10 + 'A';
+//       }
+//       c = (c >> 4) & 0xf;
+//       code0 = c + '0';
+//       if (c > 9)
+//       {
+//         code0 = c - 10 + 'A';
+//       }
+//       code2 = '\0';
+//       encodedString += '%';
+//       encodedString += code0;
+//       encodedString += code1;
+//       //encodedString+=code2;
+//     }
+//     yield();
+//   }
+//   return encodedString;
+// }
 
 String htmlencode(String str)
 {
   String encodedstr = "";
   char c;
-  uint8_t b;
 
-  for (int i = 0; i < str.length(); i++)
+  for (uint16_t i = 0; i < str.length(); i++)
   {
     c = str.charAt(i);
 
@@ -356,29 +376,31 @@ bool startConfiguration()
 
   WiFiManagerParameter api_list(HTTP_API_LIST);
   WiFiManagerParameter custom_api("selAPI", "selAPI", String(my_api).c_str(),
-                                  20, TYPE_HIDDEN, WFM_NO_LABEL);
+    20, TYPE_HIDDEN, WFM_NO_LABEL);
 
   WiFiManagerParameter custom_name("name", "iSpindel Name", htmlencode(my_name).c_str(),
-                                   TKIDSIZE*2);
+    TKIDSIZE * 2);
   WiFiManagerParameter custom_sleep("sleep", "Update Intervall (s)",
-                                    String(my_sleeptime).c_str(), 6, TYPE_NUMBER);
+    String(my_sleeptime).c_str(), 6, TYPE_NUMBER);
   WiFiManagerParameter custom_token("token", "Token", htmlencode(my_token).c_str(),
-                                    TKIDSIZE*2);
+    TKIDSIZE * 2);
   WiFiManagerParameter custom_server("server", "Server Address",
-                                     my_server, TKIDSIZE);
+    my_server, TKIDSIZE);
   WiFiManagerParameter custom_port("port", "Server Port",
-                                   String(my_port).c_str(), TKIDSIZE,
-                                   TYPE_NUMBER);
+    String(my_port).c_str(), TKIDSIZE,
+    TYPE_NUMBER);
   WiFiManagerParameter custom_url("url", "Server URL", my_url, TKIDSIZE);
   WiFiManagerParameter custom_db("db", "InfluxDB db", my_db, TKIDSIZE);
+  WiFiManagerParameter custom_username("username", "Username", my_username, TKIDSIZE);
+  WiFiManagerParameter custom_password("password", "Password", my_password, TKIDSIZE);
   WiFiManagerParameter custom_job("job", "Prometheus job", my_job, TKIDSIZE);
   WiFiManagerParameter custom_instance("instance", "Prometheus instance", my_instance, TKIDSIZE);
   WiFiManagerParameter custom_vfact("vfact", "Battery conversion factor",
-                                    String(my_vfact).c_str(), 7, TYPE_NUMBER);
+    String(my_vfact).c_str(), 7, TYPE_NUMBER);
   WiFiManagerParameter tempscale_list(HTTP_TEMPSCALE_LIST);
   WiFiManagerParameter custom_tempscale("tempscale", "tempscale",
-                                        String(my_tempscale).c_str(),
-                                        5, TYPE_HIDDEN, WFM_NO_LABEL);
+    String(my_tempscale).c_str(),
+    5, TYPE_HIDDEN, WFM_NO_LABEL);
 
   wifiManager.addParameter(&custom_name);
   wifiManager.addParameter(&custom_sleep);
@@ -399,11 +421,13 @@ bool startConfiguration()
   wifiManager.addParameter(&custom_port);
   wifiManager.addParameter(&custom_url);
   wifiManager.addParameter(&custom_db);
+  wifiManager.addParameter(&custom_username);
+  wifiManager.addParameter(&custom_password);
   wifiManager.addParameter(&custom_job);
   wifiManager.addParameter(&custom_instance);
   WiFiManagerParameter custom_polynom_lbl("<hr><label for=\"POLYN\">Gravity conversion<br/>ex. \"-0.00031*tilt^2+0.557*tilt-14.054\"</label>");
   wifiManager.addParameter(&custom_polynom_lbl);
-  WiFiManagerParameter custom_polynom("POLYN", "Polynominal", htmlencode(my_polynominal).c_str(), 70*2, WFM_NO_LABEL);
+  WiFiManagerParameter custom_polynom("POLYN", "Polynominal", htmlencode(my_polynominal).c_str(), 70 * 2, WFM_NO_LABEL);
   wifiManager.addParameter(&custom_polynom);
 
   wifiManager.setConfSSID(htmlencode(my_ssid));
@@ -418,6 +442,8 @@ bool startConfiguration()
   validateInput(custom_token.getValue(), my_token);
   validateInput(custom_server.getValue(), my_server);
   validateInput(custom_db.getValue(), my_db);
+  validateInput(custom_username.getValue(), my_username);
+  validateInput(custom_password.getValue(), my_password);
   validateInput(custom_job.getValue(), my_job);
   validateInput(custom_instance.getValue(), my_instance);
   my_sleeptime = String(custom_sleep.getValue()).toInt();
@@ -460,7 +486,7 @@ bool saveConfig()
 
   // if SPIFFS is not usable
   if (!SPIFFS.begin() || !SPIFFS.exists(CFGFILE) ||
-      !SPIFFS.open(CFGFILE, "w"))
+    !SPIFFS.open(CFGFILE, "w"))
     formatSpiffs();
 
   DynamicJsonBuffer jsonBuffer;
@@ -476,6 +502,8 @@ bool saveConfig()
   json["Port"] = my_port;
   json["URL"] = my_url;
   json["DB"] = my_db;
+  json["Username"] = my_username;
+  json["Password"] = my_password;
   json["Job"] = my_job;
   json["Instance"] = my_instance;
   json["Vfact"] = my_vfact;
@@ -528,18 +556,34 @@ bool uploadData(uint8_t service)
   }
 #endif
 
+#ifdef API_MQTT
+  if (service == DTMQTT)
+  {
+    sender.add("tilt", Tilt);
+    sender.add("temperature", scaleTemperature(Temperatur));
+    sender.add("temp_units", tempScaleLabel());
+    sender.add("battery", Volt);
+    sender.add("gravity", Gravity);
+    sender.add("interval", my_sleeptime);
+    sender.add("RSSI", WiFi.RSSI());
+    CONSOLELN(F("\ncalling MQTT"));
+    return sender.sendMQTT(my_server, my_port, my_username, my_password, my_name);
+  }
+#endif
+
 #ifdef API_INFLUXDB
   if (service == DTInfluxDB)
   {
     sender.add("tilt", Tilt);
     sender.add("temperature", scaleTemperature(Temperatur));
+    sender.add("temp_units", tempScaleLabel());
     sender.add("battery", Volt);
     sender.add("gravity", Gravity);
     sender.add("interval", my_sleeptime);
     sender.add("RSSI", WiFi.RSSI());
     CONSOLELN(F("\ncalling InfluxDB"));
-    CONSOLELN(String(F("Sending to db: ")) + my_db);
-    return sender.sendInfluxDB(my_server, my_port, my_db, my_name);
+    CONSOLELN(String(F("Sending to db: ")) + my_db + String(F(" w/ credentials: ")) + my_username + String(F(":")) + my_password);
+    return sender.sendInfluxDB(my_server, my_port, my_db, my_name, my_username, my_password);
   }
 #endif
 
@@ -567,6 +611,7 @@ bool uploadData(uint8_t service)
       sender.add("token", my_token);
     sender.add("angle", Tilt);
     sender.add("temperature", scaleTemperature(Temperatur));
+    sender.add("temp_units", tempScaleLabel());
     sender.add("battery", Volt);
     sender.add("gravity", Gravity);
     sender.add("interval", my_sleeptime);
@@ -602,6 +647,7 @@ bool uploadData(uint8_t service)
   {
     sender.add("angle", Tilt);
     sender.add("temperature", scaleTemperature(Temperatur));
+    sender.add("temp_units", tempScaleLabel());
     sender.add("battery", Volt);
     sender.add("gravity", Gravity);
     sender.add("ID", ESP.getChipId());
@@ -620,6 +666,7 @@ bool uploadData(uint8_t service)
     return sender.sendTCONTROL(my_server, my_port);
   }
 #endif // DATABASESYSTEM ==
+return false;
 }
 
 void goodNight(uint32_t seconds)
@@ -679,7 +726,7 @@ void sleepManager()
 
 void requestTemp()
 {
-  if (DSrequested == false)
+  if (!DSrequested)
   {
     DS18B20.requestTemperatures();
     DSreqTime = millis();
@@ -777,7 +824,7 @@ float getTemperature(bool block = false)
     DSrequested = false;
 
     if (t == DEVICE_DISCONNECTED_C || // DISCONNECTED
-        t == 85.0)                    // we read 85 uninitialized
+      t == 85.0)                    // we read 85 uninitialized
     {
       CONSOLELN(F("ERROR: OW DISCONNECTED"));
       pinMode(ONE_WIRE_BUS, OUTPUT);
@@ -808,7 +855,7 @@ float calculateGravity()
   double _temp = Temperatur;
   float _gravity = 0;
   int err;
-  te_variable vars[] = {{"tilt", &_tilt}, {"temp", &_temp}};
+  te_variable vars[] = { { "tilt", &_tilt }, { "temp", &_temp } };
   te_expr *expr = te_compile(my_polynominal, vars, 2, &err);
 
   if (expr)
@@ -850,7 +897,7 @@ bool isSafeMode(float _volt)
     return false;
 }
 
-bool connectBackupCredentials()
+void connectBackupCredentials()
 {
   WiFi.disconnect();
   WiFi.begin(my_ssid.c_str(), my_psk.c_str());
@@ -906,7 +953,7 @@ void setup()
     {
       // test if ssid exists
       if (WiFi.SSID() == "" &&
-          my_ssid != "" && my_psk != "")
+        my_ssid != "" && my_psk != "")
       {
         connectBackupCredentials();
       }
@@ -954,11 +1001,11 @@ void setup()
     accelgyro.dmpGetEuler(euler, &q);
 
     /*
-      for (int i = 1; i < 64; i++) {
-        CONSOLE(fifoBuffer[i]);
-        CONSOLE(" ");
-      }
-   */
+    for (int i = 1; i < 64; i++) {
+    CONSOLE(fifoBuffer[i]);
+    CONSOLE(" ");
+    }
+    */
 
     CONSOLE(F("euler\t"));
     CONSOLE((euler[0] * 180 / M_PI));
