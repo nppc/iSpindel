@@ -57,7 +57,7 @@ extern Ticker flasher;
 #define PORTALTIMEOUT 300
 
 #define ADCDIVISOR 191.8
-#define ONE_WIRE_BUS D6 // DS18B20 on ESP pin12
+#define ONE_WIRE_BUS D1 // DS18B20 on ESP pin12
 #define RESOLUTION 12   // 12bit resolution == 750ms update rate
 #define OWinterval (800 / (1 << (12 - RESOLUTION)))
 #define CFGFILE "/config.json"

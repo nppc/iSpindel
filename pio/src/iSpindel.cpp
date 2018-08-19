@@ -263,6 +263,15 @@ bool shouldStartConfig()
   if (!_validConf)
     CONSOLELN(F("\nERROR config corrupted"));
 
+  // Seems ESP-07S has a valid reset info (6 for power on and 5 for reset)
+  if (_reset_reason==6) {
+    // on first boot initialize WiFi. Needed for ESP-07S
+    CONSOLELN();
+    CONSOLELN(F("Initialize WiFi"));
+    WiFi.begin();
+    WiFi.waitForConnectResult();
+  }
+
   bool _wifiCred = (WiFi.SSID() != "");
   uint8_t c = 0;
   if (!_wifiCred)
@@ -910,10 +919,10 @@ void setup()
 
   #ifdef LED_EXT
   ledState = HIGH; //OFF
-  digitalWrite(2, ledState); 
+  digitalWrite(2, ledState);
   pinMode(2, OUTPUT); //GPIO4 is only one free pin
   #endif
-  
+
   Serial.begin(115200);
 
   CONSOLELN(F("\nFW " FIRMWAREVERSION));
