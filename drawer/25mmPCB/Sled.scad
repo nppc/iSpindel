@@ -1,23 +1,33 @@
+// PCB is 25x48mm
+// based on universam1 project
+
+$fn = 80;
+RohrInnenDurchmesser = 39.5; // 39,7
+RohrInnenLaenge = 155; //149
+Toleranz = 0.7; // Masstoleranz Abzug
+
+width = RohrInnenDurchmesser - 2*Toleranz;
+length = RohrInnenLaenge - 1* Toleranz - width/2;
+
+
+
 //translate([0,-6,0])import("C:/src/Tennp/Git/iSpindel/drawer/drawer-combo-short-spring2.stl");
 difference(){
-    union(){
-        rotate([-90,0,0])cylinder(d1=40,d2=38,h=40,$fn=50);
-        rotate([-90,0,0])cylinder(d=38,h=120,$fn=50);
-        translate([0,120,0])scale([1,1.7,1])sphere(d=38,$fn=50);
- 
-    }
-    translate([0,130+25,0])cube([50,50,50],true);
+    RohrInnen();
+    translate([0,145+25,0])cube([50,50,50],true);
     translate([0,100,-15])cube([50,200,20],true);
     translate([0,100,15])cube([50,200,20],true);
-    translate([0,0,0])cube([24,100,20],true);
-    translate([0,0,2])cube([25.5,100,2],true);
-    translate([0,129,5])rotate([86,0,0])liion();
-    for(i=[0:5.15:75])translate([11.3,47.5+i,-6])roundcut(8,3.9,7);
+    //translate([0,0,0])cube([24,48*2,20],true);
+    CutOut(24,48*2,2);
+    translate([0,0,2])cube([25.5,48*2,2],true);
+    translate([0,144,5])rotate([86,0,0])liion(); //battery
+    for(i=[0:5.15:80])translate([11.3,47.5+i,-6])roundcut(8,3.9,7);
     for(i=[0:9.85:40])translate([14.4,2.5+i,-6])roundcut(7,9,4);
     mirror([1,0,0]){
-        for(i=[0:5.2:75])translate([11.3,47.5+i,-6])roundcut(8,3.9,7);
+        for(i=[0:5.2:80])translate([11.3,47.5+i,-6])roundcut(8,3.9,7);
         for(i=[0:9.9:40])translate([14.4,2.5+i,-6])roundcut(7,9,4);
     }
+    translate([0,62,0])CutOut(18,22,3);
 }
 
 //roundcut(6,9,4);
@@ -39,4 +49,28 @@ module roundcut(radius, width, rlen){
     }
     cylinder(d=1.5,h=20,$fn=15);
     }
+}
+
+module CutOut(cw,cl,cdiam) {
+  cwd=cw-cdiam;
+  clw=cl-cdiam;
+  hull(){
+    translate([cwd/2,clw/2,0])cylinder(d=cdiam,h=20,$fn=20,center=true);
+    translate([-cwd/2,clw/2,0])cylinder(d=cdiam,h=20,$fn=20,center=true);
+    translate([cwd/2,-clw/2,0])cylinder(d=cdiam,h=20,$fn=20,center=true);
+    translate([-cwd/2,-clw/2,0])cylinder(d=cdiam,h=20,$fn=20,center=true);
+  }
+}
+
+module RohrInnen() {
+  echo("Variable length is ", length);
+  echo("Variable width is ", width);
+  translate([0, length, 0]) 
+  rotate([90, 0, 0])
+  translate([0, 0,30-(width/2)]) 
+  union() {
+    scale([1, 1, 30/(width/2)])  
+    sphere(d=width);
+    cylinder(d=width, h=length - (30-(width/2)), center=false);
+  }
 }
