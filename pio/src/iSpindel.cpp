@@ -268,7 +268,10 @@ bool shouldStartConfig()
     // on first boot initialize WiFi. Needed for ESP-07S
     CONSOLELN();
     CONSOLELN(F("Initialize WiFi"));
-    WiFi.begin();
+//    WiFi.begin();
+    WiFi.disconnect();
+    delay(1000);
+    WiFi.begin(my_ssid.c_str(), my_psk.c_str());
     WiFi.waitForConnectResult();
   }
 
@@ -908,8 +911,8 @@ bool isSafeMode(float _volt)
 
 void connectBackupCredentials()
 {
-  WiFi.disconnect();
-  WiFi.begin(my_ssid.c_str(), my_psk.c_str());
+//  WiFi.disconnect();
+//  WiFi.begin(my_ssid.c_str(), my_psk.c_str());
   CONSOLELN(F("Rescue Wifi credentials"));
   delay(100);
 }

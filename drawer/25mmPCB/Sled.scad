@@ -15,9 +15,8 @@ length = RohrInnenLaenge - 1* Toleranz - width/2;
 difference(){
     RohrInnen();
     translate([0,145+25,0])cube([50,50,50],true);
-    translate([0,100,-15])cube([50,200,20],true);
-    translate([0,100,15])cube([50,200,20],true);
-    //translate([0,0,0])cube([24,48*2,20],true);
+    translate([0,99,-15])cube([50,200,20],true);
+    translate([0,99,15])cube([50,200,20],true);
     CutOut(24,48*2,2);
     translate([0,0,2])cube([25.5,48*2,2],true);
     translate([0,144,5])rotate([86,0,0])liion(); //battery
@@ -29,6 +28,7 @@ difference(){
     }
     translate([0,62,0])CutOut(18,22,3);
 }
+translate([0,30,-5])underPCB();
 
 //roundcut(6,9,4);
 
@@ -62,6 +62,21 @@ module CutOut(cw,cl,cdiam) {
   }
 }
 
+module underPCB(){
+    difference(){
+        translate([0,0,1])cube([25,33,2],true);
+        for(i=[0:7.5:35])translate([0,i-15,0])CutOut(24,5.5,1.5);
+    }
+}
+
+module toroid(diamext,diamint){
+    cylinder(d=(diamext-(diamext-diamint)/2),h=(diamext-diamint)/2,center=true,$fn=80);
+    rotate_extrude(convexity = 10, $fn = 80)
+    translate([(diamext-(diamext-diamint)/2)/2, 0, 0])
+    circle(d = (diamext-diamint)/2, $fn = 30);
+}
+
+
 module RohrInnen() {
   echo("Variable length is ", length);
   echo("Variable width is ", width);
@@ -71,6 +86,7 @@ module RohrInnen() {
   union() {
     scale([1, 1, 30/(width/2)])  
     sphere(d=width);
-    cylinder(d=width, h=length - (30-(width/2)), center=false);
+    cylinder(d=width, h=length - (30-(width/2))-1/2, center=false);
+    translate([0,0,length - (30-(width/2))-1/2])toroid(width,width-1*2);
   }
 }
