@@ -1,34 +1,26 @@
 // PCB is 25x48mm
-// based on universam1 project
 
-$fn = 80;
-RohrInnenDurchmesser = 39.5; // 39,7
-RohrInnenLaenge = 155; //149
-Toleranz = 0.7; // Masstoleranz Abzug
-
-width = RohrInnenDurchmesser - 2*Toleranz;
-length = RohrInnenLaenge - 1* Toleranz - width/2;
-
+$fn = 40;
+length = 150;
+diamchange = 4; // smaller 4mm each 10cm
+diam1 = 39.9;
+diam2 = diam1-(length/100*diamchange); 
+echo(diam1);
+echo(diam2);
 
 
-//translate([0,-6,0])import("C:/src/Tennp/Git/iSpindel/drawer/drawer-combo-short-spring2.stl");
 difference(){
-    RohrInnen();
-    translate([0,145+25,0])cube([50,50,50],true);
+    mainpart();
+    //translate([0,145+25,0])cube([50,50,50],true);
     translate([0,99,-15])cube([50,200,20],true);
     translate([0,99,15])cube([50,200,20],true);
     CutOut(24,48*2,2);
-    translate([0,0,2])cube([25.5,48*2,2],true);
-    translate([0,144,5])rotate([86,0,0])liion(); //battery
-    for(i=[0:5.15:80])translate([11.3,47.5+i,-6])roundcut(8,3.9,7);
-    for(i=[0:9.85:40])translate([14.4,2.5+i,-6])roundcut(7,9,4);
-    mirror([1,0,0]){
-        for(i=[0:5.2:80])translate([11.3,47.5+i,-6])roundcut(8,3.9,7);
-        for(i=[0:9.9:40])translate([14.4,2.5+i,-6])roundcut(7,9,4);
-    }
-    translate([0,62,0])CutOut(18,22,3);
+    translate([0,0,2])cube([25.3,48*2,1.85],true);
+    translate([0,149,5])rotate([86,0,0])liion(); //battery
+    translate([0,65,0])CutOut(18,26,3);
 }
 translate([0,30,-5])underPCB();
+
 
 //roundcut(6,9,4);
 
@@ -64,29 +56,50 @@ module CutOut(cw,cl,cdiam) {
 
 module underPCB(){
     difference(){
-        translate([0,0,1])cube([25,33,2],true);
-        for(i=[0:7.5:35])translate([0,i-15,0])CutOut(24,5.5,1.5);
+        translate([0,0,1])cube([25,38,2],true);
+        for(i=[0:7.5:35])translate([0,i-17,0])CutOut(24,5.5,1.5);
     }
 }
 
 module toroid(diamext,diamint){
-    cylinder(d=(diamext-(diamext-diamint)/2),h=(diamext-diamint)/2,center=true,$fn=80);
-    rotate_extrude(convexity = 10, $fn = 80)
+    cylinder(d=(diamext-(diamext-diamint)/2),h=(diamext-diamint)/2,center=true);
+    rotate_extrude(convexity = 10)
+    translate([(diamext-(diamext-diamint)/2)/2, 0, 0])
+    circle(d = (diamext-diamint)/2, $fn = 30);
+}
+
+module donut(diamext,diamint){
+    rotate_extrude(convexity = 10)
     translate([(diamext-(diamext-diamint)/2)/2, 0, 0])
     circle(d = (diamext-diamint)/2, $fn = 30);
 }
 
 
-module RohrInnen() {
-  echo("Variable length is ", length);
-  echo("Variable width is ", width);
+module mainpart() {
   translate([0, length, 0]) 
   rotate([90, 0, 0])
-  translate([0, 0,30-(width/2)]) 
   union() {
-    scale([1, 1, 30/(width/2)])  
-    sphere(d=width);
-    cylinder(d=width, h=length - (30-(width/2))-1/2, center=false);
-    translate([0,0,length - (30-(width/2))-1/2])toroid(width,width-1*2);
+    //toroid(diam2,diam2-8);
+    cylinder(d2=diam1-11,d1=diam2-11, h=length);
+    //translate([0,0,length-2/2])toroid(diam1,diam1-2*2);
+    for(i=[0:16.8:140])
+       translate([0,0,i])spring(diam2+(i/100*diamchange),14,5.5,0.8);
   }
+}
+
+module spring(sdiam, slen, sh, thck){
+    difference(){
+        spring_sub(sdiam,slen,sh);
+        translate([0,0,thck])spring_sub(sdiam-thck*2,slen-thck*2,sh-thck*2);
+    }
+}
+    
+module spring_sub(sdiam,slen,sh){
+    sdiam2 = sdiam-((slen-sh)/100*diamchange);
+    difference(){
+        translate([0,0,sh/2])cylinder(d2=sdiam, d1=sdiam2,h=slen-sh);
+        translate([0,0,sh/2])cylinder(d2=sdiam-sh*2, d1=sdiam2-sh*2,h=slen-sh);
+    }
+    translate([0,0,sh/2])donut(sdiam2,sdiam2-sh*2);
+    translate([0,0,slen-sh/2])donut(sdiam,sdiam-sh*2);
 }
