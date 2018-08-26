@@ -1,9 +1,9 @@
 // PCB is 25x48mm
 
-$fn = 40;
-length = 150;
-diamchange = 4; // smaller 4mm each 10cm
-diam1 = 39.9;
+$fn = 80;
+length = 148; // normally is 150, but I have too much weight at the end, so it doesn't fit.
+diamchange = 2.73; // smaller 4mm each 10cm
+diam1 = 40.1;
 diam2 = diam1-(length/100*diamchange); 
 echo(diam1);
 echo(diam2);
@@ -11,18 +11,15 @@ echo(diam2);
 
 difference(){
     mainpart();
-    //translate([0,145+25,0])cube([50,50,50],true);
     translate([0,99,-15])cube([50,200,20],true);
     translate([0,99,15])cube([50,200,20],true);
-    CutOut(24,48*2,2);
-    translate([0,0,2])cube([25.3,48*2,1.85],true);
-    translate([0,149,5])rotate([86,0,0])liion(); //battery
-    translate([0,65,0])CutOut(18,26,3);
+    CutOut(24,53*2,2);
+    translate([0,47.5/2+5,2])cube([25.3,48.5,1.85],true); // for PCB
+    translate([0,147,2])rotate([86,0,0])liion(); //battery
+    translate([0,66,0])CutOut(22,23,4);
 }
-translate([0,30,-5])underPCB();
+translate([0,42,-5])underPCB();
 
-
-//roundcut(6,9,4);
 
 module liion(){
     cylinder(d=19.5,h=68,$fn=50);
@@ -56,16 +53,10 @@ module CutOut(cw,cl,cdiam) {
 
 module underPCB(){
     difference(){
-        translate([0,0,1])cube([25,38,2],true);
-        for(i=[0:7.5:35])translate([0,i-17,0])CutOut(24,5.5,1.5);
+        translate([0,1,1])cube([25,22,2],true);
+        for(i=[0:7.5:27])translate([0,i-17,0])CutOut(24,5.5,1.5);
     }
-}
 
-module toroid(diamext,diamint){
-    cylinder(d=(diamext-(diamext-diamint)/2),h=(diamext-diamint)/2,center=true);
-    rotate_extrude(convexity = 10)
-    translate([(diamext-(diamext-diamint)/2)/2, 0, 0])
-    circle(d = (diamext-diamint)/2, $fn = 30);
 }
 
 module donut(diamext,diamint){
@@ -79,10 +70,8 @@ module mainpart() {
   translate([0, length, 0]) 
   rotate([90, 0, 0])
   union() {
-    //toroid(diam2,diam2-8);
     cylinder(d2=diam1-11,d1=diam2-11, h=length);
-    //translate([0,0,length-2/2])toroid(diam1,diam1-2*2);
-    for(i=[0:16.8:140])
+    for(i=[0:16.5:140])
        translate([0,0,i])spring(diam2+(i/100*diamchange),14,5.5,0.8);
   }
 }
