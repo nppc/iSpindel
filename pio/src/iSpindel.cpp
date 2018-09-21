@@ -256,6 +256,18 @@ bool shouldStartConfig(bool validConf)
   if (_dblreset)
     CONSOLELN(F("\nDouble Reset detected"));
 
+  // Seems ESP-07S has a valid reset info (6 for power on and 5 for reset)
+  if (_reset_reason==6) {
+    // on first boot initialize WiFi. Needed for ESP-07S
+    CONSOLELN();
+    CONSOLELN(F("Initialize WiFi"));
+//    WiFi.begin();
+    WiFi.disconnect();
+    delay(1000);
+    WiFi.begin(my_ssid.c_str(), my_psk.c_str());
+    WiFi.waitForConnectResult();
+  }
+
   bool _wifiCred = (WiFi.SSID() != "");
   uint8_t c = 0;
   if (!_wifiCred)
@@ -1213,7 +1225,7 @@ void setup()
   }
   else
   {
-    connectBackupCredentials();
+    //connectBackupCredentials();
     CONSOLELN(F("failed to connect"));
   }
 
