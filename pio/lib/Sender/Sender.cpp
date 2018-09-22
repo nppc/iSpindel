@@ -39,7 +39,9 @@ bool SenderClass::sendMQTT(String server, uint16_t port, String username, String
     _mqttClient.setServer(server.c_str(), port);
     _mqttClient.setCallback([this](char *topic, byte *payload, unsigned int length) { this->mqttCallback(topic, payload, length); });
 
-    while (!_mqttClient.connected())
+    byte i = 0;
+
+    while (!_mqttClient.connected() && (i < 3))
     {
         CONSOLELN(F("Attempting MQTT connection"));
         // Attempt to connect
@@ -49,10 +51,51 @@ bool SenderClass::sendMQTT(String server, uint16_t port, String username, String
         }
         else
         {
-            CONSOLELN(F("Failed MQTT connection, return code:"));
-            CONSOLELN(_mqttClient.state());
+            CONSOLE(F("Failed MQTT connection, return code:"));
+
+            int Status = _mqttClient.state();
+
+            switch (Status)
+            {
+            case -4:
+              CONSOLELN(F("Connection timeout"));
+              break;
+
+            case -3:
+              CONSOLELN(F("Connection lost"));
+              break;
+
+            case -2:
+              CONSOLELN(F("Connect failed"));
+              break;
+
+            case -1:
+              CONSOLELN(F("Disconnected"));
+              break;
+
+            case 1:
+              CONSOLELN(F("Bad protocol"));
+              break;
+
+            case 2:
+              CONSOLELN(F("Bad client ID"));
+              break;
+
+            case 3:
+              CONSOLELN(F("Unavailable"));
+              break;
+
+            case 4:
+              CONSOLELN(F("Bad credentials"));
+              break;
+
+            case 5:
+              CONSOLELN(F("Unauthorized"));
+              break;
+            }
             CONSOLELN(F("Retrying MQTT connection in 5 seconds"));
             // Wait 5 seconds before retrying
+            i++;
             delay(5000);
         }
     }
@@ -80,8 +123,10 @@ void SenderClass::mqttCallback(char *topic, byte *payload, unsigned int length)
     }
 }
 
-bool SenderClass::sendTCP(String server, uint16_t port)
+String SenderClass::sendTCP(String server, uint16_t port)
 {
+    int timeout = 0;
+    String response;
     _jsonVariant.printTo(Serial);
 
     if (_client.connect(server.c_str(), port))
@@ -95,7 +140,6 @@ bool SenderClass::sendTCP(String server, uint16_t port)
         CONSOLELN(F("\nERROR Sender: couldnt connect"));
     }
 
-    int timeout = 0;
     while (!_client.available() && timeout < CONNTIMEOUT)
     {
         timeout++;
@@ -103,13 +147,12 @@ bool SenderClass::sendTCP(String server, uint16_t port)
     }
     while (_client.available())
     {
-        char c = _client.read();
-        Serial.write(c);
+        response += _client.read();
     }
-    // currentValue = 0;
+    CONSOLELN(response);
     _client.stop();
-    delay(100); // allow gracefull session close
-    return true;
+    delay(50); // allow gracefull session close
+    return response;
 }
 
 bool SenderClass::sendGenericPost(String server, String url, uint16_t port)
