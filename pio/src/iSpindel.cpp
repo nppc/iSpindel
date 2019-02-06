@@ -1049,6 +1049,7 @@ void connectBackupCredentials()
 void setup()
 {
 
+	Temperatur = 5.0;
   Serial.begin(115200);
 
   CONSOLELN(F("\nFW " FIRMWAREVERSION));
