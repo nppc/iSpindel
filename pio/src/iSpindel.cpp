@@ -66,7 +66,7 @@ float ypr[3];        // [yaw, pitch, roll]   yaw/pitch/roll container and gravit
 
 bool shouldSaveConfig = false;
 
-char my_token[TKIDSIZE * 2];
+char my_token[TKIDSIZE];
 char my_name[TKIDSIZE] = "iSpindel000";
 char my_server[TKIDSIZE];
 char my_url[TKIDSIZE];
@@ -75,7 +75,7 @@ char my_username[TKIDSIZE];
 char my_password[TKIDSIZE];
 char my_job[TKIDSIZE] = "ispindel";
 char my_instance[TKIDSIZE] = "000";
-char my_polynominal[100] = "-0.00031*tilt^2+0.557*tilt-14.054";
+char my_polynominal[70] = "-0.00031*tilt^2+0.557*tilt-14.054";
 
 String my_ssid;
 String my_psk;
@@ -92,12 +92,6 @@ float pitch, roll;
 
 int16_t ax, ay, az;
 float Volt, Temperatur, Tilt, Gravity; // , corrGravity;
-
-//bool DSrequested = false;
-
-#ifdef LED_EXT
-bool ledState;
-#endif
 
 float scaleTemperature(float t)
 {
@@ -349,10 +343,10 @@ bool startConfiguration()
 
   WiFiManagerParameter custom_name("name", "iSpindel Name", htmlencode(my_name).c_str(),
                                    TKIDSIZE * 2);
-  WiFiManagerParameter custom_sleep("sleep", "Update Interval (s)",
+  WiFiManagerParameter custom_sleep("sleep", "Update Intervall (s)",
                                     String(my_sleeptime).c_str(), 6, TYPE_NUMBER);
   WiFiManagerParameter custom_token("token", "Token", htmlencode(my_token).c_str(),
-                                    TKIDSIZE * 2 * 2);
+                                    TKIDSIZE * 2);
   WiFiManagerParameter custom_server("server", "Server Address",
                                      my_server, TKIDSIZE);
   WiFiManagerParameter custom_port("port", "Server Port",
@@ -396,7 +390,7 @@ bool startConfiguration()
   wifiManager.addParameter(&custom_instance);
   WiFiManagerParameter custom_polynom_lbl("<hr><label for=\"POLYN\">Gravity conversion<br/>ex. \"-0.00031*tilt^2+0.557*tilt-14.054\"</label>");
   wifiManager.addParameter(&custom_polynom_lbl);
-  WiFiManagerParameter custom_polynom("POLYN", "Polynominal", htmlencode(my_polynominal).c_str(), 100 * 2, WFM_NO_LABEL);
+  WiFiManagerParameter custom_polynom("POLYN", "Polynominal", htmlencode(my_polynominal).c_str(), 70 * 2, WFM_NO_LABEL);
   wifiManager.addParameter(&custom_polynom);
 
   wifiManager.setConfSSID(htmlencode(my_ssid));
@@ -1024,11 +1018,6 @@ float calculateGravity()
 void flash()
 {
   // triggers the LED
-  #ifdef LED_EXT
-  digitalWrite(2, ledState;); //toggle
-  ledState=!ledState;
-  #endif
-
   Volt = getBattery();
   if (testAccel())
     getAccSample();
@@ -1060,12 +1049,7 @@ void connectBackupCredentials()
 void setup()
 {
 
-  #ifdef LED_EXT
-  ledState = HIGH; //OFF
-  digitalWrite(2, ledState);
-  pinMode(2, OUTPUT); //GPIO4 is only one free pin
-  #endif
-
+	Temperatur = 5.0;
   Serial.begin(115200);
 
   CONSOLELN(F("\nFW " FIRMWAREVERSION));
@@ -1101,7 +1085,7 @@ void setup()
       ESP.rtcUserMemoryWrite(WIFIENADDR, &tmp, sizeof(tmp));
     }
 
-	flasher.attach(1, flash);
+    flasher.attach(1, flash);
 
     // rescue if wifi credentials lost because of power loss
     if (!startConfiguration())
