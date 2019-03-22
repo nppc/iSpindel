@@ -534,7 +534,7 @@ bool uploadData(uint8_t service)
     sender.add("temperature", scaleTemperature(Temperatur));
     sender.add("battery", Volt);
     sender.add("gravity", Gravity);
-    sender.add("interval", my_sleeptime);
+    //sender.add("interval", my_sleeptime); // reduce used variables
     sender.add("RSSI", WiFi.RSSI());
     CONSOLELN(F("\ncalling Ubidots"));
     return sender.sendUbidots(my_token, my_name);
